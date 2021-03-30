@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/init.h>
@@ -215,6 +216,7 @@ static int btfm_slim_dai_prepare(struct snd_pcm_substream *substream,
 		BTFMSLIM_ERR("channel opened without closing, returning success");
 		ret = 0;
 	}
+
 	return ret;
 }
 
