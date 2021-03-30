@@ -3,6 +3,7 @@
  * xHCI host controller driver
  *
  * Copyright (C) 2008 Intel Corp.
+ * Copyright (C) 2021 XiaoMi, Inc.
  *
  * Author: Sarah Sharp
  * Some code borrowed from the Linux EHCI driver.
@@ -136,7 +137,7 @@ int xhci_halt(struct xhci_hcd *xhci)
 	xhci_quiesce(xhci);
 
 	ret = xhci_handshake(&xhci->op_regs->status,
-			STS_HALT, STS_HALT, 3 * XHCI_MAX_HALT_USEC);
+			STS_HALT, STS_HALT, 2 * XHCI_MAX_HALT_USEC);
 	if (ret) {
 		xhci_warn(xhci, "Host halt failed, %d\n", ret);
 		return ret;
@@ -1011,11 +1012,6 @@ int xhci_suspend(struct xhci_hcd *xhci, bool do_wakeup)
 			xhci->shared_hcd->state != HC_STATE_SUSPENDED)
 		return -EINVAL;
 
-	/* If XHCI is already suspended , then return */
-	if ((!test_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags) ||
-			!test_bit(HCD_FLAG_HW_ACCESSIBLE, &xhci->shared_hcd->flags)))
-		return 0;
-
 	xhci_dbc_suspend(xhci);
 
 	/* Clear root port wake on bits if wakeup not allowed. */
@@ -1126,7 +1122,10 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
 	int			retval = 0;
 	bool			comp_timer_running = false;
 
-	if (!hcd->state)
+	if (!hcd)
+		return 0;
+
+        if (!hcd->state)
 		return 0;
 
 	/* Wait a bit if either of the roothubs need to settle from the

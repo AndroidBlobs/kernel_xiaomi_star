@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #include <linux/module.h>
@@ -81,7 +82,7 @@
 #define USB_HSPHY_1P8_VOL_MAX			1800000 /* uV */
 #define USB_HSPHY_1P8_HPM_LOAD			19000	/* uA */
 
-#define USB_HSPHY_VDD_HPM_LOAD			30000	/* uA */
+#define USB_HSPHY_VDD_HPM_LOAD 30000 /* uA */
 
 struct msm_hsphy {
 	struct usb_phy		phy;
@@ -171,7 +172,7 @@ static int msm_hsphy_enable_power(struct msm_hsphy *phy, bool on)
 	}
 
 	ret = regulator_set_voltage(phy->vdd, phy->vdd_levels[1],
-				    phy->vdd_levels[2]);
+		phy->vdd_levels[2]);
 	if (ret) {
 		dev_err(phy->phy.dev, "unable to set voltage for hsusb vdd\n");
 		goto put_vdd_lpm;
@@ -267,7 +268,7 @@ disable_vdd:
 
 unconfig_vdd:
 	ret = regulator_set_voltage(phy->vdd, phy->vdd_levels[0],
-				    phy->vdd_levels[2]);
+		phy->vdd_levels[2]);
 	if (ret)
 		dev_err(phy->phy.dev, "unable to set voltage for hsusb vdd\n");
 
@@ -275,12 +276,6 @@ put_vdd_lpm:
 	ret = regulator_set_load(phy->vdd, 0);
 	if (ret < 0)
 		dev_err(phy->phy.dev, "Unable to set LPM of vdd\n");
-	/* Return from here based on power_enabled. If it is not set
-	 * then return -EINVAL since either set_voltage or
-	 * regulator_enable failed
-	 */
-	if (!phy->power_enabled)
-		return -EINVAL;
 err_vdd:
 	phy->power_enabled = false;
 	dev_dbg(phy->phy.dev, "HSUSB PHY's regulators are turned OFF.\n");
@@ -758,6 +753,65 @@ static int msm_hsphy_probe(struct platform_device *pdev)
 	if (IS_ERR(phy->phy_reset))
 		return PTR_ERR(phy->phy_reset);
 
+#ifdef CONFIG_FACTORY_BUILD
+	if (of_property_read_bool(dev->of_node, "mi,factory-usb")) {
+		phy->param_override_seq_cnt = of_property_count_elems_of_size(
+				dev->of_node,
+				"qcom,param-override-seq-fac",
+				sizeof(*phy->param_override_seq));
+		if (phy->param_override_seq_cnt > 0) {
+			phy->param_override_seq = devm_kcalloc(dev,
+					phy->param_override_seq_cnt,
+					sizeof(*phy->param_override_seq),
+					GFP_KERNEL);
+			if (!phy->param_override_seq)
+				return -ENOMEM;
+
+			if (phy->param_override_seq_cnt % 2) {
+				dev_err(dev, "invalid param_override_seq_len\n");
+				return -EINVAL;
+			}
+
+			ret = of_property_read_u32_array(dev->of_node,
+					"qcom,param-override-seq-fac",
+					phy->param_override_seq,
+					phy->param_override_seq_cnt);
+			if (ret) {
+				dev_err(dev, "qcom,param-override-seq-fac read failed %d\n",
+						ret);
+				return ret;
+			}
+		}
+	} else {
+		phy->param_override_seq_cnt = of_property_count_elems_of_size(
+				dev->of_node,
+				"qcom,param-override-seq",
+				sizeof(*phy->param_override_seq));
+		if (phy->param_override_seq_cnt > 0) {
+			phy->param_override_seq = devm_kcalloc(dev,
+					phy->param_override_seq_cnt,
+					sizeof(*phy->param_override_seq),
+					GFP_KERNEL);
+			if (!phy->param_override_seq)
+				return -ENOMEM;
+
+			if (phy->param_override_seq_cnt % 2) {
+				dev_err(dev, "invalid param_override_seq_len\n");
+				return -EINVAL;
+			}
+
+			ret = of_property_read_u32_array(dev->of_node,
+					"qcom,param-override-seq",
+					phy->param_override_seq,
+					phy->param_override_seq_cnt);
+			if (ret) {
+				dev_err(dev, "qcom,param-override-seq read failed %d\n",
+						ret);
+				return ret;
+			}
+		}
+	}
+#else
 	phy->param_override_seq_cnt = of_property_count_elems_of_size(
 					dev->of_node,
 					"qcom,param-override-seq",
@@ -785,6 +839,7 @@ static int msm_hsphy_probe(struct platform_device *pdev)
 			return ret;
 		}
 	}
+#endif
 
 	ret = of_property_read_u32_array(dev->of_node, "qcom,vdd-voltage-level",
 					 (u32 *) phy->vdd_levels,
