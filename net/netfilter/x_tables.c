@@ -3,6 +3,7 @@
  * x_tables core - Backend for {ip,ip6,arp}_tables
  *
  * Copyright (C) 2006-2006 Harald Welte <laforge@netfilter.org>
+ * Copyright (C) 2021 XiaoMi, Inc.
  * Copyright (C) 2006-2012 Patrick McHardy <kaber@trash.net>
  *
  * Based on existing ip_tables code which is
@@ -1349,11 +1350,11 @@ struct xt_counters *xt_counters_alloc(unsigned int counters)
 }
 EXPORT_SYMBOL(xt_counters_alloc);
 
-struct xt_table_info
-*xt_table_get_private_protected(const struct xt_table *table)
+struct xt_table_info *
+xt_table_get_private_protected(const struct xt_table *table)
 {
 	return rcu_dereference_protected(table->private,
-					 mutex_is_locked(&xt[table->af].mutex));
+			                         mutex_is_locked(&xt[table->af].mutex));
 }
 EXPORT_SYMBOL(xt_table_get_private_protected);
 
