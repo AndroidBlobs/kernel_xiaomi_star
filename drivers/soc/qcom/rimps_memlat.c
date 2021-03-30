@@ -331,7 +331,7 @@ static ssize_t show_cur_freq(struct kobject *kobj, char *buf)
 	return count;
 }
 
-static ssize_t show_available_frequencies(struct kobject *kobj, char *buf)
+static ssize_t show_available_freq(struct kobject *kobj, char *buf)
 {
 	struct memlat_mon *mon = to_memlat_mon(kobj);
 	u32 i = 0;
@@ -339,9 +339,7 @@ static ssize_t show_available_frequencies(struct kobject *kobj, char *buf)
 
 	if (mon->mon_type == L3_MEMLAT) {
 		for (i = 0; i <= l3_pstates; i++)
-			tmp += scnprintf(tmp, PAGE_SIZE, "%u ", l3_freqs[i]);
-
-		tmp += scnprintf(tmp, PAGE_SIZE, "\n");
+			tmp += scnprintf(tmp, PAGE_SIZE, "%u\n", l3_freqs[i]);
 	}
 	return (tmp - buf);
 }
@@ -423,7 +421,7 @@ memlat_mon_attr_rw(l2wb_pct);
 memlat_mon_attr_rw(l2wb_filter);
 memlat_mon_attr_rw(log_level);
 memlat_mon_attr_ro(cur_freq);
-memlat_mon_attr_ro(available_frequencies);
+memlat_mon_attr_ro(available_freq);
 
 static struct attribute *mon_dev_attr[] = {
 	&ratio_ceil.attr,
@@ -434,7 +432,7 @@ static struct attribute *mon_dev_attr[] = {
 	&l2wb_pct.attr,
 	&l2wb_filter.attr,
 	&cur_freq.attr,
-	&available_frequencies.attr,
+	&available_freq.attr,
 	NULL,
 };
 
@@ -536,7 +534,6 @@ static int setup_common_pmu_events(struct memlat_cpu_grp *cpu_grp,
 			pmu[STALL_IDX].hw_cntr_idx = INVALID_PMU_HW_IDX;
 		}
 	}
-	kfree(attr);
 	return 0;
 }
 
@@ -605,7 +602,6 @@ static int setup_mon_pmu_events(struct memlat_mon *mon,
 			pmu[L3_ACCESS_IDX].hw_cntr_idx = INVALID_PMU_HW_IDX;
 		}
 	}
-	kfree(attr);
 	return 0;
 }
 

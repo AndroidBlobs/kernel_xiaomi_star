@@ -2,6 +2,7 @@
 
 /*
  * Copyright (c) 2011-2020, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2021 XiaoMi, Inc.
  */
 
 #define pr_fmt(fmt) "%s: " fmt, __func__
@@ -17,14 +18,12 @@
 #include <clocksource/arm_arch_timer.h>
 
 #ifdef CONFIG_ARM
-#ifndef readq_relaxed
 #define readq_relaxed(a) ({			\
 	u64 val = readl_relaxed((a) + 4);	\
 	val <<= 32;				\
 	val |=  readl_relaxed((a));		\
 	val;					\
 })
-#endif
 #endif
 
 struct stats_config {
@@ -41,6 +40,7 @@ struct soc_sleep_stats_data {
 	struct kobj_attribute ka;
 	void __iomem *reg;
 };
+
 
 struct entry {
 	__le32 stat_type;
@@ -218,6 +218,8 @@ static int soc_sleep_stats_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, drv);
+
+
 	return 0;
 }
 
