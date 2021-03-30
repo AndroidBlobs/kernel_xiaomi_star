@@ -184,8 +184,7 @@ static int print_mem_entry(void *data, void *ptr)
 	flags[3] = get_alignflag(m);
 	flags[4] = get_cacheflag(m);
 	flags[5] = kgsl_memdesc_use_cpu_map(m) ? 'p' : '-';
-	/* Show Y if at least one vma has this entry mapped (could be multiple) */
-	flags[6] = atomic_read(&entry->map_count) ? 'Y' : 'N';
+	flags[6] = (m->useraddr) ? 'Y' : 'N';
 	flags[7] = kgsl_memdesc_is_secured(m) ?  's' : '-';
 	flags[8] = '-';
 	flags[9] = '\0';
@@ -198,13 +197,10 @@ static int print_mem_entry(void *data, void *ptr)
 
 	seq_printf(s, "%pK %pK %16llu %5d %9s %10s %16s %5d %16llu %6d %6d",
 			(uint64_t *)(uintptr_t) m->gpuaddr,
-			/*
-			 * Show zero for the useraddr - we can't reliably track
-			 * that value for multiple vmas anyway
-			 */
-			0, m->size, entry->id, flags,
+			(unsigned long *) m->useraddr,
+			m->size, entry->id, flags,
 			memtype_str(usermem_type),
-			usage, (m->sgt ? m->sgt->nents : 0), m->size,
+			usage, (m->sgt ? m->sgt->nents : 0), m->mapsize,
 			egl_surface_count, egl_image_count);
 
 	if (entry->metadata[0] != 0)
